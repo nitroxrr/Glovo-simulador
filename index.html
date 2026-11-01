@@ -1,495 +1,173 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
-
-<meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Glovo Courier Simulation</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #ffffff; }
-
-.map-bg {
-
-background: radial-gradient(circle at 50% 30%, #1e293b 0%, #090d16 70%);
-
-position: relative;
-
-overflow: hidden;
-
-}
-
-.map-grid {
-
-background-image:
-
-linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-
-linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-
-background-size: 40px 40px;
-
-}
-
-</style>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Glovo Courier Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0c1017; color: #fff; overflow-x: hidden; }
+        .map-bg {
+            background-color: #0c141e;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 70%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+        .pulse-location {
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+            70% { box-shadow: 0 0 0 18px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+    </style>
 </head>
-
-<body class="flex justify-center items-center min-h-screen bg-slate-950 p-0 sm:p-4">
-
-
-
-<!-- Mobile Phone Frame Container -->
-
-<div class="w-full max-w-md h-screen sm:h-[844px] bg-black sm:rounded-[40px] shadow-2xl overflow-hidden flex flex-col relative border-0 sm:border-4 border-slate-800">
-
-
-<!-- Top System Bar -->
-
-<div class="bg-black/80 backdrop-blur-md px-6 py-3 flex justify-between items-center text-xs font-semibold z-30">
-
-<span>20:25</span>
-
-<div class="w-24 h-4 bg-black rounded-full mx-auto absolute left-1/2 -translate-x-1/2 top-2"></div>
-
-<div class="flex items-center space-x-2">
-
-<span>5G</span>
-
-<span>🔋 84%</span>
-
-</div>
-
-</div>
-
-
-
-<!-- Header Controls Bar -->
-
-<div class="absolute top-12 left-0 right-0 px-4 flex justify-between items-center z-20 pointer-events-auto">
-
-<button onclick="toggleMenu()" class="w-10 h-10 bg-zinc-900/90 rounded-full flex items-center justify-center shadow-lg border border-zinc-800 text-white">
-
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-
-</button>
-
-
-<div class="bg-zinc-900/90 border border-zinc-800 px-4 py-1.5 rounded-full flex items-center space-x-2 shadow-lg">
-
-<span class="text-xs text-zinc-300 font-medium">Estado</span>
-
-<span class="text-xs font-semibold text-white">En línea</span>
-
-<span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
-
-</div>
-
-
-
-<button class="w-10 h-10 bg-zinc-900/90 rounded-full flex items-center justify-center shadow-lg border border-zinc-800 text-red-500 relative">
-
-<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"></path></svg>
-
-<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
-
-</button>
-
-</div>
-
-
-
-<!-- Interactive Map Area -->
-
-<div id="mapContainer" class="flex-1 map-bg map-grid relative transition-all duration-700">
-
-<!-- Simulated Roads / Map Lines -->
-
-<svg class="absolute inset-0 w-full h-full opacity-30 pointer-events-none" xmlns="http://www.w3.org/2000/svg">
-
-<path d="M 0 200 Q 150 150 250 300 T 400 500" stroke="#38bdf8" stroke-width="8" fill="none"/>
-
-<path d="M 100 0 Q 200 250 100 500" stroke="#64748b" stroke-width="4" fill="none"/>
-
-</svg>
-
-
-
-<!-- Location Marker (Store or Client) -->
-
-<div id="mapPin" class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center transition-all duration-500 z-10">
-
-<div id="pinBadge" class="bg-emerald-500 text-black px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 shadow-lg flex items-center gap-1">
-
-<span id="pinIcon">🏪</span> McDonald's®
-
-</div>
-
-<div class="w-8 h-8 bg-emerald-500/30 rounded-full flex items-center justify-center animate-ping absolute"></div>
-
-<div class="w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center shadow-xl text-xs font-bold text-black">📍</div>
-
-</div>
-
-
-
-<!-- User GPS Position -->
-
-<div class="absolute top-1/2 left-[55%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-
-<div class="w-12 h-12 bg-blue-500/20 rounded-full animate-pulse absolute"></div>
-
-<div class="w-5 h-5 bg-blue-600 rounded-full border-2 border-white shadow-lg"></div>
-
-</div>
-
-
-
-<!-- Navigation Compass Button -->
-
-<button class="absolute right-4 bottom-72 w-12 h-12 bg-emerald-500 text-black rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform z-10">
-
-<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-
-</button>
-
-</div>
-
-
-
-<!-- Bottom Sheet Card Panel -->
-
-<div class="bg-zinc-900 border-t border-zinc-800 rounded-t-[28px] p-5 shadow-2xl z-20 transition-all duration-300">
-
-<div class="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-4"></div>
-
-
-
-<!-- DYNAMIC CONTENT CONTAINER -->
-
-<div id="cardContent">
-
-<!-- STEP 1: Main Order List view -->
-
-<div id="step1View">
-
-<div class="flex justify-between items-start mb-1">
-
-<h2 class="text-lg font-bold text-white">McDonald's®</h2>
-
-<button class="w-9 h-9 bg-zinc-800 rounded-full flex items-center justify-center text-emerald-400 hover:bg-zinc-700">
-
-<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
-
-</button>
-
-</div>
-
-<p class="text-xs text-zinc-400 mb-1">2 pedidos</p>
-
-<p class="text-xs text-zinc-300 mb-3 leading-relaxed">McDonald's, Calle de los Monasterios de Suso y Yuso, Madrid, Spain, MAD</p>
-
-
-<div class="flex items-center justify-between bg-zinc-800/60 rounded-xl p-3 mb-4 border border-zinc-800">
-
-<div class="flex items-center space-x-2 text-xs text-zinc-400">
-
-<span>📝</span>
-
-<span class="text-zinc-200 font-mono">MGLML7ZA</span>
-
-</div>
-
-<button class="text-xs text-emerald-400 font-medium hover:underline">Traducir</button>
-
-</div>
-
-
-
-<!-- Order Item Row -->
-
-<div class="border-t border-zinc-800/80 pt-3 flex items-center justify-between">
-
-<div class="flex items-center space-x-3">
-
-<span class="text-xs px-2 py-1 bg-zinc-800 text-zinc-400 rounded">1</span>
-
-<div>
-
-<span class="text-xs text-zinc-400 block">Estará listo pronto</span>
-
-<span class="text-xl font-black text-white tracking-wider">#972</span>
-
-</div>
-
-</div>
-
-<button onclick="openModalStep2()" class="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center text-black font-bold hover:bg-emerald-400 transition-transform active:scale-95 shadow-lg shadow-emerald-500/20">
-
-<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- MODAL POPUP BACKDROP (Step 2 & 3) -->
-
-<div id="modalBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex flex-col justify-end transition-opacity opacity-0">
-
-<div onclick="closeModal()" class="flex-1"></div>
-
-<div id="modalSheet" class="bg-zinc-900 border-t border-zinc-800 rounded-t-[32px] p-6 shadow-2xl transform translate-y-full transition-transform duration-300">
-
-<div class="flex justify-between items-center mb-4">
-
-<span class="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs font-bold rounded-full">Listo</span>
-
-<button onclick="closeModal()" class="w-8 h-8 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400">✕</button>
-
-</div>
-
-
-
-<div class="flex items-baseline space-x-2 mb-1">
-
-<h3 class="text-2xl font-black text-white">#422</h3>
-
-<span class="text-xs text-emerald-400 font-mono">↗</span>
-
-</div>
-
-<p class="text-xs text-zinc-400 mb-4">10182054572 - #422 - Anderson Henriquez</p>
-
-
-
-<div class="flex justify-between items-center text-xs text-zinc-300 py-2 border-y border-zinc-800 mb-4">
-
-<span>Pago</span>
-
-<span class="text-zinc-400">Sin pago en el punto de recogida</span>
-
-</div>
-
-
-
-<div class="mb-4">
-
-<button class="w-full py-3.5 bg-white text-black font-bold rounded-xl text-sm shadow-lg hover:bg-zinc-100 transition-colors" onclick="openConfirmStep3()">
-
-Confirmar recogida
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- SUB-MODAL DOUBLE CONFIRMATION (Step 3) -->
-
-<div id="confirmModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex flex-col justify-end">
-
-<div class="bg-zinc-900 border-t border-zinc-800 rounded-t-[32px] p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
-
-<p class="text-sm font-medium text-white mb-6 text-center leading-relaxed">
-
-¿Confirmas que has recogido el pedido <span class="font-mono font-bold text-emerald-400">10182054572(#422)</span>?
-
-</p>
-
-<div class="space-y-3">
-
-<button id="finalConfirmBtn" onclick="executeFinalConfirmation()" class="w-full py-3.5 bg-white text-black font-bold rounded-xl text-sm shadow-lg flex items-center justify-center space-x-2 hover:bg-zinc-100 active:scale-98 transition-all">
-
-<span>Confirmar recogida</span>
-
-</button>
-
-<button onclick="closeConfirmStep3()" class="w-full py-3 text-emerald-400 font-semibold text-sm text-center">
-
-Cancelar
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-
-
-
-<!-- JAVASCRIPT LOGIC FOR TRANSITIONS -->
-
-<script>
-
-function openModalStep2() {
-
-const backdrop = document.getElementById('modalBackdrop');
-
-const sheet = document.getElementById('modalSheet');
-
-backdrop.classList.remove('hidden');
-
-setTimeout(() => {
-
-backdrop.classList.add('opacity-100');
-
-sheet.classList.remove('translate-y-full');
-
-}, 10);
-
-}
-
-
-
-function closeModal() {
-
-const backdrop = document.getElementById('modalBackdrop');
-
-const sheet = document.getElementById('modalSheet');
-
-sheet.classList.add('translate-y-full');
-
-backdrop.classList.remove('opacity-100');
-
-setTimeout(() => backdrop.classList.add('hidden'), 300);
-
-}
-
-
-
-function openConfirmStep3() {
-
-document.getElementById('confirmModal').classList.remove('hidden');
-
-}
-
-
-
-function closeConfirmStep3() {
-
-document.getElementById('confirmModal').classList.add('hidden');
-
-}
-
-
-
-function executeFinalConfirmation() {
-
-const btn = document.getElementById('finalConfirmBtn');
-
-btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Procesando...`;
-
-btn.disabled = true;
-
-
-
-setTimeout(() => {
-
-closeConfirmStep3();
-
-closeModal();
-
-
-
-// TRANSITION TO STEP 4 (Client Delivery View)
-
-document.getElementById('mapPin').style.top = '40%';
-
-document.getElementById('pinBadge').innerHTML = '<span>👤</span> Daniel vila';
-
-document.getElementById('pinBadge').className = 'bg-sky-500 text-black px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 shadow-lg flex items-center gap-1';
-
-
-
-document.getElementById('cardContent').innerHTML = `
-
-<div class="flex justify-between items-start mb-1">
-
-<h2 class="text-lg font-bold text-white">Daniel vila</h2>
-
-<div class="flex space-x-2">
-
-<button class="w-9 h-9 bg-zinc-800 rounded-full flex items-center justify-center text-emerald-400">📞</button>
-
-<button class="w-9 h-9 bg-zinc-800 rounded-full flex items-center justify-center text-emerald-400">💬</button>
-
-</div>
-
-</div>
-
-<p class="text-xs text-zinc-300 mb-3">Avenida de Nazaret 4 , 28708, MAD</p>
-
-
-<div class="flex items-center justify-between bg-zinc-800/60 rounded-xl p-3 mb-4 border border-zinc-800">
-
-<div class="flex items-center space-x-2 text-xs text-zinc-400">
-
-<span>🥝</span>
-
-<span class="text-zinc-200 font-mono">679736128</span>
-
-</div>
-
-<button class="text-xs text-emerald-400 font-medium">Traducir</button>
-
-</div>
-
-
-
-<div class="border-t border-zinc-800/80 pt-3">
-
-<p class="text-xs text-zinc-400 font-mono">101816173019</p>
-
-<div class="flex justify-between items-center mt-1">
-
-<span class="text-sm font-bold text-white">#6298 · Daniel vila</span>
-
-<span class="text-xs text-emerald-400 font-medium bg-emerald-500/10 px-2 py-1 rounded">Pick-up</span>
-
-</div>
-
-</div>
-
-`;
-
-}, 1200);
-
-}
-
-
-
-function toggleMenu() {
-
-alert("Menú de opciones de repartidor Glovo simulado.");
-
-}
-
-</script>
-
+<body class="h-screen w-screen flex flex-col justify-between relative select-none">
+
+    <!-- MAPA CON PUNTOS DE REFERENCIA (ALCOBENDAS / A-1) -->
+    <div class="absolute inset-0 map-bg z-0 flex items-center justify-center overflow-hidden">
+        <!-- Zonas del mapa -->
+        <div class="absolute top-[18%] left-[20%] text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Soto de Viñuelas</div>
+        <div class="absolute bottom-[35%] left-[15%] text-xs font-black text-zinc-400 tracking-wider">Alcobendas</div>
+        <div class="absolute top-[40%] right-[10%] text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Belvis del Jarama</div>
+
+        <!-- Carretera A-1 -->
+        <div class="absolute w-[2px] h-full bg-zinc-700/50 rotate-45"></div>
+        <div class="absolute top-[48%] left-[52%] bg-white text-zinc-950 font-bold text-[9px] px-1 rounded border border-zinc-400 shadow">A-1</div>
+
+        <!-- Pin Cliente (Icono de usuario) -->
+        <div class="absolute top-[22%] left-[53%] z-10 flex flex-col items-center">
+            <div class="w-9 h-9 bg-[#2dd4bf] text-zinc-950 rounded-full flex items-center justify-center shadow-2xl border-2 border-white">
+                <svg class="w-5 h-5 text-zinc-900" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            </div>
+            <div class="w-0.5 h-3 bg-[#2dd4bf]"></div>
+        </div>
+
+        <!-- Ubicación Repartidor (Punto azul parpadeante con cono de luz) -->
+        <div class="absolute top-[46%] left-[45%] z-10">
+            <div class="w-7 h-7 bg-blue-500/30 rounded-full flex items-center justify-center pulse-location">
+                <div class="w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-white shadow-xl"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CABECERA SUPERIOR (ESTADO EN LÍNEA) -->
+    <header class="relative z-20 px-4 pt-3 flex items-center justify-between">
+        <!-- Botón Menú 3 rayas -->
+        <button onclick="toggleMenu()" class="w-11 h-11 bg-[#18181b]/90 border border-zinc-700/80 rounded-full flex flex-col items-center justify-center gap-1 shadow-lg active:scale-95 transition backdrop-blur-md">
+            <span class="w-4 h-0.5 bg-white rounded-full"></span>
+            <span class="w-4 h-0.5 bg-white rounded-full"></span>
+            <span class="w-4 h-0.5 bg-white rounded-full"></span>
+        </button>
+
+        <!-- Pastilla de Estado: En línea -->
+        <div onclick="toggleOnlineStatus()" id="statusPill" class="bg-[#18181b]/95 border border-zinc-700/80 px-6 py-2 rounded-2xl shadow-2xl flex items-center gap-2 cursor-pointer backdrop-blur-md active:scale-95 transition">
+            <div class="flex flex-col items-center">
+                <span class="text-[10px] text-zinc-400 font-semibold tracking-wider uppercase leading-none">Estado</span>
+                <span id="statusText" class="text-sm font-extrabold text-white tracking-wide">En línea</span>
+            </div>
+            <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 ml-1"></div>
+        </div>
+
+        <!-- Icono de soporte/auricular -->
+        <div class="w-11 h-11 bg-[#18181b]/90 border border-zinc-700/80 rounded-full flex items-center justify-center shadow-lg backdrop-blur-md relative">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+            <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-zinc-900"></span>
+        </div>
+    </header>
+
+    <!-- MENÚ LATERAL DESPLEGABLE -->
+    <div id="sideMenu" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden transition-opacity duration-300" onclick="toggleMenu()">
+        <div class="absolute left-0 top-0 bottom-0 w-72 bg-[#18181b] border-r border-zinc-800 p-5 flex flex-col justify-between shadow-2xl" onclick="event.stopPropagation()">
+            <div>
+                <div class="flex items-center gap-3 pb-5 border-b border-zinc-800 mb-5">
+                    <div class="w-12 h-12 bg-[#2dd4bf] rounded-full flex items-center justify-center font-black text-zinc-950 text-lg shadow-lg">NR</div>
+                    <div>
+                        <h3 class="font-bold text-white text-sm">Ronald Romero</h3>
+                        <p class="text-xs text-[#2dd4bf] font-medium">⭐ 4.98 · Repartidor Pro</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/60 text-white font-medium text-sm">📊 Estadísticas</a>
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-800/50 text-zinc-300 text-sm">📅 Horarios y Zonas</a>
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-800/50 text-zinc-300 text-sm">💳 Ganancias y Pagos</a>
+                </div>
+            </div>
+            <button onclick="toggleMenu()" class="w-full py-3 bg-zinc-800 text-zinc-300 rounded-xl font-bold text-xs">Cerrar menú</button>
+        </div>
+    </div>
+
+    <!-- TARJETA INFERIOR (DETALLES EXACTOS DE LA CAPTURA) -->
+    <div class="relative z-25 p-3 pb-4">
+        <div class="bg-[#12161f]/95 border border-zinc-800/90 rounded-3xl p-5 shadow-2xl backdrop-blur-xl">
+            
+            <!-- Barra superior fina de deslizamiento -->
+            <div class="w-10 h-1 bg-zinc-600/80 rounded-full mx-auto mb-4"></div>
+
+            <!-- Cabecera del cliente y botones de acción -->
+            <div class="flex items-center justify-between mb-3">
+                <h1 class="text-2xl font-black text-white tracking-tight">Daniel vila</h1>
+                <div class="flex items-center gap-3">
+                    <button class="w-11 h-11 bg-zinc-900 border border-emerald-500/40 rounded-full flex items-center justify-center text-emerald-400 shadow-md active:scale-95 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                    </button>
+                    <button class="w-11 h-11 bg-zinc-900 border border-emerald-500/40 rounded-full flex items-center justify-center text-emerald-400 shadow-md active:scale-95 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dirección -->
+            <p class="text-sm font-semibold text-zinc-200 mb-3">Avenida de Nazaret 4 , 28708, MAD</p>
+
+            <!-- Teléfono y opción Traducir -->
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-zinc-400 text-sm">✍️</span>
+                <span class="text-sm font-mono font-bold text-emerald-400 underline underline-offset-2">679736128</span>
+            </div>
+            <div class="text-xs text-zinc-400 mb-2">🥝</div>
+            <button class="text-emerald-400 text-sm font-bold mb-5 hover:underline block">Traducir</button>
+
+            <!-- Separador -->
+            <div class="border-t border-zinc-800/80 pt-4 mb-2">
+                <p class="text-2xl font-black text-white tracking-widest mb-2">101816173019</p>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm font-bold text-white">#6298 · Daniel vila</span>
+                    <span class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-md border border-emerald-500/20">Pick-up</span>
+                </div>
+            </div>
+
+            <p class="text-xs font-bold text-zinc-400 pt-1">Pago</p>
+
+        </div>
+    </div>
+
+    <script>
+        let isOnline = true;
+
+        function toggleMenu() {
+            const menu = document.getElementById('sideMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleOnlineStatus() {
+            isOnline = !isOnline;
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            
+            if (isOnline) {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 ml-1";
+                text.innerText = "En línea";
+            } else {
+                dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 ml-1";
+                text.innerText = "Fuera de línea";
+            }
+        }
+    </script>
 </body>
-
-</html> 
+</html>
